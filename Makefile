@@ -4,9 +4,6 @@ NAME = scop
 
 CC = gcc
 
-# CFLAGS = -Wall -Wextra -Werror
-# CFLAGS = -Wall -Wextra -g -fsanitize=address
-
 OBJ_PATH = obj/
 
 OBJ_NAME = $(SRC_NAME:.c=.o)
@@ -19,11 +16,16 @@ OBJ = $(addprefix $(OBJ_PATH),$(OBJ_NAME))
 
 LIBGLFW = glfw-3.2.1
 
+
+LFLAGS = -Llib -lglfw -framework OpenGL -framework AppKit 
+
+INC = -I include
+
 all : $(NAME)
 
 $(NAME) : $(LIBGLFW) $(OBJ_PATH) $(OBJ)
 	@echo ""
-	@$(CC) $(OBJ) $(LFLAGS) -o $@ 
+	$(CC) $(OBJ) $(LFLAGS) -o $@
 	@echo "\x1b[32;01m$@ SUCCESSFULLY CREATED !\x1b[32;00m"
 
 $(OBJ_PATH):
@@ -31,7 +33,7 @@ $(OBJ_PATH):
 
 $(OBJ_PATH)%.o: $(SRC_PATH)%.c
 	@echo "\x1b[32;01m.\x1b[32;00m\c"
-	@$(CC) $(CFLAGS) $(INC) -o $@ -c $<
+	$(CC) $(CFLAGS) $(INC) -o $@ -c $< $(INC)
 
 $(LIBGLFW) :
 	@if [ ! -d "./$(LIBGLFW)" ]; then \
@@ -39,8 +41,11 @@ $(LIBGLFW) :
 		unzip *.zip; \
 		mv *.zip "./$(LIBGLFW)"; \
 		cd $(LIBGLFW); \
-		cmake docs; \
+		mkdir build ; \
+		cd build ; \
+		cmake -DCMAKE_INSTALL_PREFIX=../.. -DBUILD_SHARED_LIBS=ON -DGLFW_USE_CHDIR=0 ..; \
 		make; \
+		make install ;\
 		echo "\033[32mLib $(LIBGLFW) compiled\033[0m"; \
 	fi
 
@@ -50,7 +55,7 @@ clean:
 	@rm -rf $(OBJ_PATH)
 	@printf "\033[1;32m[OK]\033[0m\n"
 
-fclean: clean
+fclean: clean cleanlib
 	@printf "%-50s" "deleting executable..." 
 	@rm -rf $(NAME)
 	@printf "\033[1;32m[OK]\033[0m\n"
@@ -59,5 +64,7 @@ re: fclean all
 
 cleanlib: 
 	@printf "%-50s" "deleting libs..." 
+	@make -C $(LIBGLFW)/build uninstall
 	@rm -rf $(LIBGLFW)
+	@rm -rf lib/cmake lib/pkgconfig include/GLFW
 	@printf "\033[1;32m[OK]\033[0m\n"
